@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:wallyscafe.com)",
+      "Bash(chmod:*)",
+      "Bash(tree:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:calendar.ploughandstars.com)",
+      "WebFetch(domain:www.beehiveboston.com)",
+      "WebFetch(domain:www.themadmonkfish.com)",
+      "Bash(cd:*)",
+      "WebFetch(domain:www.burren.com)",
+      "WebFetch(domain:tockify.com)"
+    ]
+  }
+}

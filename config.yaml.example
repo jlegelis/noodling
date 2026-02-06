@@ -1,0 +1,43 @@
+# Output Configuration
+output:
+  # Output mode: "email", "file", or "both"
+  # - "email": Send email only
+  # - "file": Write results to file only (useful for diagnostics)
+  # - "both": Send email and write to file
+  mode: "file"  # Change to "email" or "both" when email is configured
+
+  # File output settings (used when mode is "file" or "both")
+  output_file: "events_output.txt"
+
+# Email Configuration
+email:
+  # SMTP server settings
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+
+  # Sender credentials (use app-specific password for Gmail)
+  sender_email: "your-email@gmail.com"
+  sender_password: "your-app-specific-password"
+
+  # Recipients (can be multiple)
+  recipients:
+    - "recipient@example.com"
+
+  # Email subject
+  subject: "Today's Live Music in Boston"
+
+# Scraping Configuration
+scraping:
+  # User agent to use for requests
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+  # Request timeout in seconds
+  timeout: 10
+
+  # Days to look ahead for events
+  days_ahead: 7
+
+# Schedule Configuration
+schedule:
+  # Time to send daily email (24-hour format, e.g., "09:00")
+  daily_time: "09:00"
