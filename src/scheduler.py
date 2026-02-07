@@ -21,15 +21,9 @@ def scheduled_job():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
 
-    # Initialize logger (same approach as main.py)
+    # Initialize logger (use BaseScraper's class method; don't instantiate abstract class)
     from scrapers.base_scraper import BaseScraper
-    _temp_scraper = BaseScraper(
-        venue_name="Scheduler",
-        url="",
-        user_agent="Mozilla/5.0",
-        timeout=10
-    )
-    logger = _temp_scraper.logger
+    logger = BaseScraper._get_logger()
 
     # Load configuration
     config_path = os.path.join(parent_dir, 'config.yaml')

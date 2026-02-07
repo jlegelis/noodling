@@ -204,16 +204,9 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
 
-    # Initialize logging by creating a scraper instance (this sets up the logger)
-    # We need to do this before logging, so create a temporary scraper
+    # Initialize logging (use BaseScraper's class method; don't instantiate abstract class)
     from scrapers.base_scraper import BaseScraper
-    _temp_scraper = BaseScraper(
-        venue_name="Music Finder",
-        url="",
-        user_agent="Mozilla/5.0",
-        timeout=10
-    )
-    logger = _temp_scraper.logger
+    logger = BaseScraper._get_logger()
     
     log_file = os.path.join(parent_dir, 'scraper_diagnostics.log')
     logger.info("=" * 80)
