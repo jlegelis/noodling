@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVS Health — Human vs Digital Labor Audit &amp; Compliance Matrix</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #C00000;
+    --red-light: #fdf0f0;
+    --red-mid: #f5cccc;
+    --dark: #1a1a1a;
+    --mid: #444;
+    --muted: #777;
+    --border: #ddd;
+    --bg: #fafafa;
+    --white: #fff;
+    --sev-critical-bg: #fde8e8; --sev-critical-text: #8b0000; --sev-critical-border: #f5b5b5;
+    --sev-high-bg: #fff4e0; --sev-high-text: #7a4400; --sev-high-border: #ffd080;
+    --sev-medium-bg: #e8f3fd; --sev-medium-text: #0a4a7a; --sev-medium-border: #90c4f0;
+    --sev-new-bg: #e8f5ec; --sev-new-text: #1a5c2a; --sev-new-border: #88cc99;
+    --col-control: 180px;
+    --col-human: 240px;
+    --col-digital: 240px;
+    --col-gap: 220px;
+    --col-resolution: 260px;
+    --font: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--dark);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: var(--red);
+    color: var(--white);
+    padding: 20px 28px 18px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  }
+  .header-left {}
+  .header-logo { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; opacity: .75; margin-bottom: 4px; }
+  .header-title { font-size: 18px; font-weight: 600; line-height: 1.2; }
+  .header-sub { font-size: 12px; opacity: .7; margin-top: 3px; }
+  .header-stats { display: flex; gap: 20px; flex-shrink: 0; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 600; line-height: 1; }
+  .stat-lbl { font-size: 10px; opacity: .7; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 80px;
+    z-index: 99;
+  }
+  .toolbar-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-weight: 500; margin-right: 4px; }
+  .filter-btn {
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--mid);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .filter-btn:hover { border-color: var(--red); color: var(--red); }
+  .filter-btn.active { background: var(--red); color: var(--white); border-color: var(--red); }
+  .toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 6px; }
+  .legend { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── TABLE WRAPPER ── */
+  .table-wrap {
+    overflow-x: auto;
+    padding: 0 28px 40px;
+    margin-top: 16px;
+  }
+
+  /* ── TABLE ── */
+  table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 100%;
+  }
+  col.col-control   { width: var(--col-control); }
+  col.col-human     { width: var(--col-human); }
+  col.col-digital   { width: var(--col-digital); }
+  col.col-gap       { width: var(--col-gap); }
+  col.col-resolution{ width: var(--col-resolution); }
+
+  thead th {
+    background: var(--dark);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 10px 12px;
+    text-align: left;
+    border-right: 1px solid rgba(255,255,255,.12);
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+  }
+  thead th:last-child { border-right: none; }
+
+  /* column resize handle */
+  .resize-handle {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 5px;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 10;
+  }
+  .resize-handle:hover, .resize-handle.dragging { background: rgba(255,255,255,.3); }
+
+  /* section rows */
+  tr.section-row td {
+    background: #f0f0f0;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    padding: 10px 12px 6px;
+    border-top: 2px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* data rows */
+  tr.data-row td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    vertical-align: top;
+    font-size: 13px;
+    overflow: hidden;
+  }
+  tr.data-row td:last-child { border-right: none; }
+  tr.data-row { cursor: pointer; transition: background .1s; }
+  tr.data-row:hover td { background: #fdf5f5; }
+  tr.data-row.expanded td { background: var(--red-light); }
+
+  /* control name cell */
+  .ctrl-name { font-weight: 600; color: var(--dark); font-size: 13px; line-height: 1.3; }
+  .ctrl-fw { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: var(--mono); line-height: 1.4; }
+  .chevron { display: inline-block; transition: transform .18s; color: var(--muted); margin-left: 4px; font-size: 10px; }
+  tr.expanded .chevron { transform: rotate(90deg); }
+
+  /* severity badge */
+  .sev-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+  .sev-critical { background: var(--sev-critical-bg); color: var(--sev-critical-text); border-color: var(--sev-critical-border); }
+  .sev-high     { background: var(--sev-high-bg);     color: var(--sev-high-text);     border-color: var(--sev-high-border); }
+  .sev-medium   { background: var(--sev-medium-bg);   color: var(--sev-medium-text);   border-color: var(--sev-medium-border); }
+  .sev-new      { background: var(--sev-new-bg);      color: var(--sev-new-text);      border-color: var(--sev-new-border); }
+
+  .cell-text { font-size: 12.5px; color: var(--mid); line-height: 1.55; }
+
+  /* detail row */
+  tr.detail-row { display: none; }
+  tr.detail-row.open { display: table-row; }
+  tr.detail-row td {
+    padding: 0 !important;
+    border-bottom: 2px solid var(--red-mid) !important;
+    border-right: none !important;
+    background: var(--white) !important;
+  }
+  .detail-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 0;
+    border-left: 4px solid var(--red);
+  }
+  .detail-section {
+    padding: 14px 16px;
+    border-right: 1px solid var(--border);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--mid);
+  }
+  .detail-section:last-child { border-right: none; }
+  .detail-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .detail-resolution {
+    background: #fdf8f0;
+    border-left: 3px solid #e08000;
+  }
+  .detail-resolution .detail-section-label { color: #c06000; }
+
+  /* hidden */
+  .hidden { display: none !important; }
+
+  /* print */
+  @media print {
+    .toolbar, .page-header { position: static; }
+    tr.detail-row { display: none !important; }
+    .resize-handle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-left">
+    <div class="header-logo">CVS Health · Qualitest Group · April 2026 · Confidential</div>
+    <div class="header-title">Audit &amp; Compliance Controls — Human vs Digital Labor</div>
+    <div class="header-sub">Click any row to expand full detail · Drag column edges to resize · Filter by framework</div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="stat-num" id="s-total">28</div><div class="stat-lbl">Controls</div></div>
+    <div class="stat"><div class="stat-num" style="color:#ffaaaa" id="s-crit">11</div><div class="stat-lbl">Critical</div></div>
+    <div class="stat"><div class="stat-num" style="color:#ffd080" id="s-high">9</div><div class="stat-lbl">High</div></div>
+    <div class="stat"><div class="stat-num" style="color:#90c4f0" id="s-med">5</div><div class="stat-lbl">Medium</div></div>
+    <div class="stat"><div class="stat-num" style="color:#88cc99" id="s-new">3</div><div class="stat-lbl">New</div></div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <span class="toolbar-label">Filter</span>
+  <button class="filter-btn active" data-filter="all">All frameworks</button>
+  <button class="filter-btn" data-filter="HIPAA">HIPAA</button>
+  <button class="filter-btn" data-filter="SOC2">SOC 2</button>
+  <button class="filter-btn" data-filter="SOX">SOX / ITGC</button>
+  <button class="filter-btn" data-filter="NIST">NIST AI RMF</button>
+  <button class="filter-btn" data-filter="MITRE">MITRE / OWASP</button>
+  <button class="filter-btn" data-filter="critical">Critical gaps only</button>
+  <div class="toolbar-sep"></div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--sev-critical-text)"></div>Critical</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--sev-high-text)"></div>High</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--sev-medium-text)"></div>Medium</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--sev-new-text)"></div>New risk class</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+<table id="matrix">
+  <colgroup>
+    <col class="col-control">
+    <col class="col-human">
+    <col class="col-digital">
+    <col class="col-gap">
+    <col class="col-resolution">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Control area<div class="resize-handle" data-col="0"></div></th>
+      <th style="color:#90c4f0">Human worker<div class="resize-handle" data-col="1"></div></th>
+      <th style="color:#ffd080">Digital labor (AI agent)<div class="resize-handle" data-col="2"></div></th>
+      <th style="color:#ffaaaa">Gap / issue<div class="resize-handle" data-col="3"></div></th>
+      <th style="color:#88cc99">Recommended resolution<div class="resize-handle" data-col="4"></div></th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<script>
+const DATA = [
+  {section:"Identity & Access Management"},
+  {id:1,fw:["HIPAA","SOC2"],sev:"critical",
+   name:"Unique user identification",
+   frameworks:"HIPAA §164.312(a) · SOC 2 CC6.1",
+   human:"Each human has a single, persistent identity credential (username, employee ID) tied to HR records. Access is bound to the individual and revocable via HR offboarding.",
+   digital:"An AI agent can spawn multiple instances simultaneously. Each instance may share the same credential unless explicitly architected otherwise. No HR record exists; identity is cryptographic (DID/key pair).",
+   gap:"Existing controls assume one identity = one human. Multi-instance agents break the one-to-one assumption. Auditors cannot rely on a username to attribute an action to a single accountable party.",
+   resolution:"Require per-instance DID issuance with short-lived delegation tokens. Registry must enforce instance-level identity, not just agent-type identity. Audit logs must carry instance ID, not just agent DID."},
+  {id:2,fw:["HIPAA","SOC2"],sev:"critical",
+   name:"Access revocation & offboarding",
+   frameworks:"HIPAA §164.308(a)(3) · SOC 2 CC6.2",
+   human:"HR termination process triggers access revocation. Well-established tooling (AD/LDAP disable, badge deactivation). Regulators accept this as a standard control.",
+   digital:"Agent 'offboarding' requires: DID revocation, VC invalidation, registry CRL propagation, and graceful termination of all active delegation chains. No single system does all of this.",
+   gap:"Revocation latency — the window between a revocation decision and all systems accepting it — is unacceptable under HIPAA for PHI access. Current architecture has ~30% detection coverage for stale/revoked agents.",
+   resolution:"Define and test maximum acceptable revocation propagation time (SLA). Implement revocation chaos testing. Ensure all PHI-touching paths validate against live CRL, not cached registry state."},
+  {id:3,fw:["SOC2","SOX"],sev:"high",
+   name:"Privileged access management (PAM)",
+   frameworks:"SOC 2 CC6.3 · SOX ITGC",
+   human:"PAM tools (CyberArk, BeyondTrust) govern elevated access. Dual approval for privilege escalation. Session recording for privileged human sessions.",
+   digital:"The CVS Agent Registry administrator has de facto privileged access over all agent identities simultaneously. A single registry admin action can introduce or endorse a rogue agent.",
+   gap:"PAM tools have no concept of 'agent registry administrator' as a privileged role. The blast radius of registry compromise is larger than any single human privileged account.",
+   resolution:"Apply multi-party approval (minimum 2 approvers) for all registry administrative actions. Implement out-of-band alerting on registry changes. Treat registry admin access with HSM-equivalent protection."},
+  {id:4,fw:["HIPAA","SOC2"],sev:"high",
+   name:"Minimum necessary / least privilege",
+   frameworks:"HIPAA §164.514(d) · SOC 2 CC6.3",
+   human:"Role-based access control (RBAC) assigns humans to roles with scoped permissions. Enforced at the directory/application layer. Auditors review role assignments periodically.",
+   digital:"Agent capability VCs define scope, but caller identity (originating human's scope) may not chain through delegation hops. A nurse with 3-patient access can trigger a Pharmacy Agent with domain-wide access.",
+   gap:"The minimum necessary standard is architecturally broken if caller scope is not propagated through the delegation chain. Auditors expect to see the principal's scope at every data access point.",
+   resolution:"Implement chained caller identity (agent_did + caller_id + caller_role + patient_scope) in delegation tokens. Enforce scope at the data layer per hop, not just at agent registration time."},
+
+  {section:"Audit Trails & Logging"},
+  {id:5,fw:["HIPAA","SOC2","SOX"],sev:"critical",
+   name:"Audit trail completeness & attribution",
+   frameworks:"HIPAA §164.312(b) · SOC 2 CC7.2 · SOX ITGC",
+   human:"Logs attribute actions to a named human user. Chain of accountability: person → action → timestamp → data affected. Forensic investigation can subpoena the human.",
+   digital:"Actions are attributed to an agent DID. The human who initiated the chain may be several hops removed. The LLM Router's reasoning process — which determined which agent to invoke — is not fully auditable.",
+   gap:"HIPAA requires that PHI access be attributable to a specific responsible party. An audit trail showing 'did:cvs:pharmacy-agent acted' does not identify the responsible human without full delegation chain tracing.",
+   resolution:"Every log entry must carry: originating user DID, full delegation chain (all agent DIDs in sequence), timestamp per hop, and the VC claims active at time of action. Log integrity must be cryptographically verified."},
+  {id:6,fw:["HIPAA","SOC2"],sev:"critical",
+   name:"Tamper-evident logging",
+   frameworks:"HIPAA §164.312(b) · SOC 2 CC7.2",
+   human:"Logs are stored in SIEM with write-once controls. Humans can attempt log tampering but leave forensic evidence (access logs, file system timestamps).",
+   digital:"A compromised agent with registry-level access could potentially suppress or alter its own audit entries. The threat model (R-12) identifies HIPAA log tampering with zero current detection coverage.",
+   gap:"Agent-controlled logging creates a conflict of interest: the entity being audited could influence the audit record. Traditional controls assume humans cannot directly access the logging infrastructure.",
+   resolution:"All PHI-related agent actions must be logged to a write-once store that no agent (including the orchestrator) can access directly. SIEM ingestion must include integrity hashing. Log infrastructure must be outside the agent trust domain."},
+  {id:7,fw:["SOC2","SOX"],sev:"high",
+   name:"Change management logging",
+   frameworks:"SOC 2 CC8.1 · SOX ITGC",
+   human:"ITSM tools (ServiceNow, Jira) record change requests, approvals, and implementations. Change author is a named human with accountability.",
+   digital:"A prompt change to the LLM Router, a new agent capability VC, or a registry policy update is a system change. None of these have obvious ITSM ticket analogues in current tooling.",
+   gap:"Auditors expect every material system change to have an authorized change record. AI system 'changes' (model updates, prompt revisions, capability additions) have no standard change management representation.",
+   resolution:"Define prompt changes, model version upgrades, VC schema changes, and registry policy changes as formal change types. Require change tickets and approvals for each. Version-control all LLM system prompts as code artifacts."},
+  {id:8,fw:["HIPAA","SOC2"],sev:"medium",
+   name:"Log retention & availability",
+   frameworks:"HIPAA §164.312(b) · SOC 2 A1.3",
+   human:"Log retention policies (6 years for HIPAA) are well-understood. Storage costs are predictable. Retrieval procedures are tested.",
+   digital:"Multi-agent systems produce significantly higher log volume per transaction (each hop generates a log entry). DID resolution events, VC validation events, and MCP signature verifications all generate records.",
+   gap:"Log volume from agentic systems may be 10–100x higher than equivalent human-driven transactions. Retention cost, storage architecture, and retrieval performance need to be re-scoped.",
+   resolution:"Profile log volume from Phase 1 PoC. Define tiered retention (hot/warm/cold) based on PHI sensitivity of the originating workflow. Test log retrieval performance against HIPAA audit response time requirements."},
+
+  {section:"Segregation of Duties & Authorization"},
+  {id:9,fw:["SOC2","SOX"],sev:"critical",
+   name:"Segregation of duties (SoD)",
+   frameworks:"SOC 2 CC6.3 · SOX ITGC",
+   human:"SoD is enforced by assigning actions requiring dual control to different humans. Structural separation: the person who initiates cannot also approve. Well-understood by auditors.",
+   digital:"The top-level orchestrator both initiates and evaluates delegation decisions. In some flows, it effectively initiates, approves, and executes without structural separation between these roles.",
+   gap:"SoD collapses in agentic architectures where a single agent class performs all three phases of a transaction. Compensating controls (detective) must substitute for the preventive separation auditors expect.",
+   resolution:"Identify all transaction types where SoD would apply in a human system. For each, implement either a human-in-the-loop checkpoint or a separate validation agent with independent authority. Document these as compensating controls in SOC 2 narratives."},
+  {id:10,fw:["HIPAA","SOC2"],sev:"high",
+   name:"Human-in-the-loop for high-risk actions",
+   frameworks:"HIPAA §164.308(a)(1) · SOC 2 CC9.2 · NIST AI RMF",
+   human:"High-risk actions (large transactions, PHI disclosure, account changes) require explicit human approval. The human approver is accountable. This is a foundational audit assumption.",
+   digital:"Agentic systems can execute irreversible or high-impact actions autonomously within a delegation chain. The architecture does not currently define which agent actions require human approval before execution.",
+   gap:"Regulators and auditors expect that actions with significant impact have a human accountable party who actively approved them. Silent autonomous execution of high-risk actions is an audit finding waiting to happen.",
+   resolution:"Define a tiered action classification: (1) autonomous, (2) requires human notification, (3) requires human pre-approval. Implement approval gates in the orchestrator for tier-3 actions. Log approval events with the approving human's identity."},
+  {id:11,fw:["SOC2","SOX"],sev:"high",
+   name:"Four-eyes / dual authorization",
+   frameworks:"SOC 2 CC6.3 · SOX ITGC",
+   human:"Dual control requires two humans to authorize sensitive operations. Implemented in banking, pharmacy dispensing, and privileged IT changes. Both humans are individually accountable.",
+   digital:"An agent cannot serve as the 'second eye' for dual authorization purposes. Two agent confirmations of the same decision do not constitute dual control — they are derived from the same underlying model and training.",
+   gap:"Agent-to-agent validation is not equivalent to human dual control for audit purposes. Auditors will not accept two LLM confirmations as satisfying a dual-authorization control requirement.",
+   resolution:"For controls that require dual authorization, one party must always be human. Identify these controls explicitly and configure the orchestrator to route them to a human approval queue. Document this clearly in control narratives."},
+
+  {section:"Data Privacy & PHI Controls"},
+  {id:12,fw:["HIPAA"],sev:"critical",
+   name:"Business Associate Agreement (BAA) coverage",
+   frameworks:"HIPAA §164.308(b)",
+   human:"Any third-party human workforce member accessing PHI operates under a BAA or employment agreement. Legal accountability is clear.",
+   digital:"Each external agent that touches PHI is a downstream Business Associate. The DID-based trust model does not substitute for an executed BAA. A partner with a valid DID but no BAA is a HIPAA violation.",
+   gap:"The architecture's external partner trust model (did:web + VC claims) does not have a legal accountability layer. Technical trust is not legal accountability. No BAA framework currently exists for external AI agents.",
+   resolution:"Establish a BAA template specifically for AI agent integrations. BAA must cover: data scope, permitted agent actions, breach notification obligations, and sub-processor controls. Execution of BAA must be a prerequisite for external agent onboarding."},
+  {id:13,fw:["HIPAA","GDPR"],sev:"critical",
+   name:"Data minimization & PHI scoping",
+   frameworks:"HIPAA §164.514(d) · GDPR Art. 5(1)(c)",
+   human:"Humans access PHI in response to specific clinical or business needs. Access is logged and auditors assess whether access was appropriate post-hoc.",
+   digital:"The LLM Router processes intent and capability-maps to agents. PHI scope may be broader than the originating request requires. The orchestrator layer may receive capability summaries that include PHI references even when not needed.",
+   gap:"Proving data minimization compliance requires demonstrating that each PHI access was necessary and proportionate. In a multi-agent chain, this requires tracing PHI scope through every hop — a capability that does not currently exist.",
+   resolution:"Implement PHI tagging at the data layer. Each agent response must declare which PHI fields were accessed and why. Orchestrator must validate that the declared PHI scope matches the VC-granted capability scope. Log discrepancies as policy violations."},
+  {id:14,fw:["GDPR","CCPA"],sev:"high",
+   name:"Right to erasure vs. immutable audit trail",
+   frameworks:"GDPR Art. 17 · CCPA §1798.105",
+   human:"Data subject deletion requests are handled by humans who can selectively remove PII from operational systems while maintaining audit records in anonymized form. Legal teams manage the tension.",
+   digital:"The immutable DID-signed audit trail (a security strength) creates a direct conflict with GDPR Art. 17 and CCPA deletion rights. PHI embedded in audit logs cannot be erased without breaking the audit chain.",
+   gap:"These two compliance obligations are architecturally incompatible without deliberate design. An immutable log containing PHI cannot satisfy both HIPAA retention and GDPR erasure simultaneously.",
+   resolution:"Design audit logs to separate: (1) cryptographic integrity data (DID signatures, timestamps, action hashes — retained), from (2) PHI payload data (names, records — erasable). Implement pseudonymization at log write time for all PHI fields."},
+  {id:15,fw:["HIPAA","GDPR"],sev:"medium",
+   name:"Data subject access requests",
+   frameworks:"HIPAA §164.524 · GDPR Art. 15",
+   human:"Patients can request copies of their records. Handled by humans who locate and compile records across systems. Statutory timelines (30 days under HIPAA) are manageable manually.",
+   digital:"In a multi-agent system, a patient's data may be distributed across Pharmacy, Claims, and Wellness agents, with interaction histories in the audit logs. Compiling a complete picture requires traversing the full agent interaction graph.",
+   gap:"Current tooling for data subject access requests assumes centralized or federated databases, not distributed agent interaction histories. Response time SLAs may be difficult to meet without purpose-built tooling.",
+   resolution:"Build a data subject record reconstruction capability that traverses the delegation chain audit log to compile all PHI accessed on behalf of a given user DID. Test against statutory response time requirements."},
+
+  {section:"AI-Specific Risk Controls (No Human Analog)"},
+  {id:16,fw:["NIST","MITRE"],sev:"new",
+   name:"Prompt injection & indirect manipulation",
+   frameworks:"NIST AI RMF · OWASP LLM01 · MITRE ATLAS AML.T0051/T0057",
+   human:"Humans are susceptible to social engineering, but it requires direct interaction and leaves social forensic traces. A human who is deceived into a bad action can testify to the manipulation.",
+   digital:"An attacker who embeds malicious instructions in data that the LLM Router re-ingests can redirect the entire orchestration chain silently. No cryptographic control prevents this. Current detection coverage: 0%.",
+   gap:"There is no traditional audit control analog for prompt injection. The attack surface is the LLM's reasoning process itself — something that produces no forensic trail and is invisible to standard log analysis.",
+   resolution:"Deploy a dedicated guardrail layer (input sanitization + output classification) at the LLM Router. Define test cases for direct and indirect injection as mandatory pre-production gates. Treat any anomalous routing decision as a security event."},
+  {id:17,fw:["NIST","MITRE"],sev:"new",
+   name:"Model drift & silent behavioral degradation",
+   frameworks:"NIST AI RMF Measure 2.5",
+   human:"Human performance degrades visibly and is managed through performance reviews, training, and supervision. Degradation is detectable through output quality and stakeholder feedback.",
+   digital:"LLM Router behavior can degrade silently as input distribution shifts from training data. A model that worked correctly in testing may produce subtly wrong routing decisions in production at low rates that escape threshold-based alerting.",
+   gap:"No traditional audit framework addresses the concept of a control mechanism whose effectiveness silently erodes without visible failure. This is a fundamentally new risk class with no HIPAA, SOC 2, or SOX analog.",
+   resolution:"Implement continuous behavioral monitoring: sample LLM Router decisions against labeled test cases weekly. Define accuracy thresholds that trigger investigation. Treat model version changes as material system changes requiring regression testing."},
+  {id:18,fw:["NIST","MITRE"],sev:"new",
+   name:"Emergent multi-agent behavior",
+   frameworks:"NIST AI RMF Govern 1.7 · CSA MAESTRO",
+   human:"Human teams produce emergent behaviors (groupthink, coordination failures), but these are observable and manageable through organizational controls (process, oversight, org design).",
+   digital:"Multi-agent systems can produce action chains that no individual agent or engineer designed or anticipated. Emergent behaviors in a healthcare context can result in patient safety events before the behavior pattern is recognized.",
+   gap:"No audit framework currently addresses emergent behavior as a control risk. There is no standard evidence format for demonstrating that emergent behaviors have been assessed, tested for, or bounded.",
+   resolution:"Define a formal emergent behavior assessment process as part of each system change review. Red-team exercises must include multi-agent chain scenarios, not just individual agent testing. Document unexpected behaviors from testing as part of the risk register."},
+  {id:19,fw:["NIST","MITRE"],sev:"critical",
+   name:"LLM reasoning opacity (explainability)",
+   frameworks:"NIST AI RMF Map 1.5 · HIPAA §164.308(a)(1)",
+   human:"Human decision-making, while not always rational, can be explained and documented. A human who makes a bad clinical decision can be interviewed, trained, or disciplined. The reasoning is available.",
+   digital:"The LLM Router's routing decisions cannot be fully explained post-hoc. The reasoning that connected an input to a delegation decision exists as floating-point arithmetic across billions of parameters, not as an auditable document.",
+   gap:"HIPAA, SOX, and SOC 2 all assume that control mechanisms can be examined, explained, and tested. A control whose mechanism is opaque by design cannot be audited in the traditional sense.",
+   resolution:"Implement structured output requirements for all LLM Router decisions: capability matched, VC scope consulted, routing rationale (in constrained format). Use deterministic validators (not LLM-graded) to verify routing decisions against expected behavior."},
+
+  {section:"Change Management & SDLC"},
+  {id:20,fw:["SOC2","SOX"],sev:"high",
+   name:"Change management for AI system behavior",
+   frameworks:"SOC 2 CC8.1 · SOX ITGC",
+   human:"System changes follow ITSM workflows: request, approval, testing, deployment, post-implementation review. The change is a discrete, bounded artifact (code diff, config update).",
+   digital:"A prompt change to the LLM Router can materially change system behavior without any code deployment. Model fine-tuning, capability VC schema updates, and registry policy changes are all 'system changes' with no standard ITSM representation.",
+   gap:"SOX ITGC and SOC 2 CC8 require that changes be authorized, tested, and documented. The concept of an 'AI system change' does not exist in standard ITSM frameworks. Auditors have no agreed-upon evidence standard for these.",
+   resolution:"Extend change management policy to explicitly cover: (1) LLM system prompt modifications, (2) model version upgrades, (3) capability VC schema changes, (4) registry policy changes. Each requires a ticket, approver, test evidence, and rollback plan."},
+  {id:21,fw:["SOC2","SOX"],sev:"medium",
+   name:"Testing evidence & quality gates",
+   frameworks:"SOC 2 CC8.1 · SOX ITGC",
+   human:"UAT and regression testing produce documented test cases, pass/fail records, and defect logs. Auditors examine test evidence to assess system quality before production deployment.",
+   digital:"Testing an LLM-integrated system requires adversarial test cases (injection attempts, jailbreak scenarios, capability escalation probes) that produce non-deterministic outputs. Pass/fail is not always binary.",
+   gap:"Traditional testing evidence formats (pass/fail test reports, defect counts) do not capture the relevant risk dimensions for AI systems. Auditors cannot assess LLM system quality using standard evidence review procedures.",
+   resolution:"Define an AI-specific test evidence format: adversarial scenario library (50+ cases), routing accuracy metrics, VC validation success rates, false negative rate for anomalous routing. Include these as required audit evidence in the SOC 2 control narrative."},
+  {id:22,fw:["SOC2","SOX"],sev:"medium",
+   name:"Vendor & third-party risk management",
+   frameworks:"SOC 2 CC9.2 · SOX ITGC",
+   human:"Third-party vendors are assessed via questionnaires, SOC 2 reports, and contractual controls. The vendor's humans are the risk surface.",
+   digital:"External AI agents are third parties whose behavior is governed by their own model, prompt, and training — not just their stated capabilities. A partner's agent may exhibit behaviors that their SOC 2 report does not address.",
+   gap:"Standard vendor risk questionnaires do not include questions about AI model governance, training data practices, prompt injection mitigations, or adversarial robustness. Existing third-party risk frameworks are blind to AI-specific risks.",
+   resolution:"Develop an AI-specific vendor risk addendum covering: model governance, training data provenance, adversarial robustness testing, incident history for AI failures, and insurance coverage for AI-caused harm."},
+
+  {section:"Incident Response & Forensics"},
+  {id:23,fw:["HIPAA","SOC2"],sev:"critical",
+   name:"Breach detection & notification",
+   frameworks:"HIPAA Breach Notification Rule · SOC 2 CC7.3",
+   human:"Breach detection involves reviewing access logs for anomalous human behavior. Notification timelines (60 days for HIPAA) assume the breach can be scoped by reviewing who accessed what.",
+   digital:"A prompt injection attack that caused the LLM Router to exfiltrate PHI via an agent response may leave no traditional breach indicator. Standard DLP and SIEM tools are not calibrated to detect PHI leakage via LLM outputs.",
+   gap:"The breach notification clock starts from discovery. If PHI exfiltration via an AI agent is undetectable by current monitoring, discovery may be delayed indefinitely. Zero current detection coverage for cross-agent PHI leakage.",
+   resolution:"Implement output scanning on all LLM Router responses for PHI content patterns. Treat anomalous agent routing (VC scope mismatch) as a breach indicator. Define AI-specific breach scenarios in the incident response playbook."},
+  {id:24,fw:["HIPAA","SOC2"],sev:"high",
+   name:"Incident response & forensic investigation",
+   frameworks:"HIPAA §164.308(a)(6) · SOC 2 CC7.4",
+   human:"IR teams can interview witnesses, examine endpoint telemetry, and reconstruct the attacker's actions through log analysis. The human attacker leaves many forensic traces.",
+   digital:"Reconstructing a multi-agent security incident requires traversing DID-signed logs across the orchestrator, authorization server, registry, and individual agents. Tooling for this does not currently exist in most IR playbooks.",
+   gap:"Current IR tooling and playbooks are designed for human attacker scenarios. An indirect prompt injection attack that redirected agent behavior leaves a fundamentally different forensic signature than a credential theft.",
+   resolution:"Develop AI-specific IR runbooks: (1) prompt injection investigation procedure, (2) rogue agent containment procedure, (3) DID compromise response. Test these in the purple team exercises. Ensure IR team has access to DID-signed audit trail traversal tooling."},
+  {id:25,fw:["SOC2","HIPAA"],sev:"medium",
+   name:"Recovery time & business continuity",
+   frameworks:"SOC 2 A1.2 · HIPAA Contingency Plan",
+   human:"Business continuity plans account for human unavailability (illness, departure). Manual fallback procedures exist for critical processes.",
+   digital:"If the orchestrator, DID resolver, or Agent Registry becomes unavailable, the entire agentic platform may be non-functional with no manual fallback. The 'unresolvable external DID' scenario has no defined fallback procedure.",
+   gap:"Traditional BCP assumes some human capacity to perform work manually. An agentic platform may have no meaningful manual fallback, making availability a more critical dependency than in human-staffed processes.",
+   resolution:"Define RPO/RTO for each agent type and the supporting infrastructure. Design graceful degradation modes: e.g., if external DID resolver is down, fall back to cached DID documents with a defined staleness threshold. Test failover in scheduled exercises."},
+
+  {section:"Governance & Accountability"},
+  {id:26,fw:["NIST","SOC2"],sev:"high",
+   name:"Accountability & responsible AI governance",
+   frameworks:"NIST AI RMF Govern 1.1 · SOC 2 CC1.2",
+   human:"Corporate governance assigns accountability to named humans: CISO, Compliance Officer, Data Protection Officer. These individuals can be held personally liable for control failures.",
+   digital:"No equivalent accountability structure exists for AI agent failures. When an agent causes harm, it is unclear whether accountability lies with the AI platform team, the model vendor, the agent developer, or the business owner of the workflow.",
+   gap:"Regulators and courts are beginning to assign liability for AI failures, but the internal governance structures to support this accountability are not yet standard. Most organizations have no named owner for individual agent risk.",
+   resolution:"Assign a named human owner to each agent class with documented accountability for that agent's behavior. Include AI agent governance in the existing enterprise risk management framework."},
+  {id:27,fw:["NIST","HIPAA"],sev:"high",
+   name:"Regulatory horizon scanning",
+   frameworks:"NIST AI RMF Govern 5.1 · FDA SaMD · FTC AI guidance",
+   human:"Legal and compliance teams monitor regulatory changes affecting human workforce practices. Change timelines are typically years, not months.",
+   digital:"The regulatory environment for healthcare AI is changing on a monthly basis: FDA SaMD guidance, HHS OCR AI/HIPAA interpretation, state-level AI laws, FTC enforcement actions.",
+   gap:"Standard compliance programs do not have mechanisms for tracking AI-specific regulatory developments or assessing their impact on a deployed agentic system. The architecture could be retroactively non-compliant.",
+   resolution:"Establish a formal AI regulatory monitoring function. Subscribe to HHS OCR, FDA, FTC, and NIST AI RMF update channels. Include 'regulatory change impact' as a standing agenda item in quarterly architecture review."},
+  {id:28,fw:["HIPAA","GDPR","SOC2"],sev:"high",
+   name:"Liability attribution in multi-party agent chains",
+   frameworks:"HIPAA BAA chain · GDPR Art. 82 · SOC 2 CC9.2",
+   human:"In multi-party human processes, liability is allocated via contracts, BAAs, and employment agreements. Insurance covers professional liability for named individuals and entities.",
+   digital:"When a chain of CVS-internal agents plus external partner agents produces a harmful outcome, traditional liability frameworks cannot cleanly attribute responsibility. Standard professional liability insurance does not cover AI-caused harm.",
+   gap:"No legal precedent or standard contractual framework currently addresses multi-agent liability chains in healthcare. Partner agreements and BAAs written for human workforce interactions do not cover this scenario.",
+   resolution:"Engage outside counsel to draft AI agent liability provisions for partner agreements. Review current professional liability and cyber insurance policies for AI exclusions. Consider requiring external partners to carry AI-specific liability coverage as an onboarding condition."},
+];
+
+const SEV_LABELS = { critical:"Critical", high:"High", medium:"Medium", new:"New risk class" };
+
+function build() {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  DATA.forEach(r => {
+    if (r.section) {
+      const tr = document.createElement('tr');
+      tr.className = 'section-row';
+      tr.dataset.section = r.section;
+      tr.innerHTML = `<td colspan="5">${r.section}</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    // main row
+    const tr = document.createElement('tr');
+    tr.className = 'data-row';
+    tr.dataset.id = r.id;
+    tr.dataset.fw = r.fw.join(',');
+    tr.dataset.sev = r.sev;
+    tr.innerHTML = `
+      <td><div class="ctrl-name">${r.name} <span class="chevron">›</span></div><div class="ctrl-fw">${r.frameworks}</div></td>
+      <td><div class="cell-text">${r.human}</div></td>
+      <td><div class="cell-text">${r.digital}</div></td>
+      <td><div><span class="sev-badge sev-${r.sev}">${SEV_LABELS[r.sev]}</span></div><div class="cell-text">${r.gap}</div></td>
+      <td><div class="cell-text">${r.resolution}</div></td>`;
+    tr.onclick = () => toggleDetail(r.id);
+    tbody.appendChild(tr);
+
+    // detail row
+    const dr = document.createElement('tr');
+    dr.className = 'detail-row';
+    dr.dataset.detailFor = r.id;
+    dr.innerHTML = `<td colspan="5"><div class="detail-inner">
+      <div class="detail-section"><div class="detail-section-label">Human control</div>${r.human}</div>
+      <div class="detail-section"><div class="detail-section-label">Digital labor challenge</div>${r.digital}</div>
+      <div class="detail-section"><div class="detail-section-label">Audit gap</div>${r.gap}</div>
+      <div class="detail-section detail-resolution"><div class="detail-section-label">Recommended resolution</div>${r.resolution}</div>
+    </div></td>`;
+    tbody.appendChild(dr);
+  });
+}
+
+function toggleDetail(id) {
+  const tr  = document.querySelector(`tr[data-id="${id}"]`);
+  const dr  = document.querySelector(`tr[data-detail-for="${id}"]`);
+  const was = dr.classList.contains('open');
+  document.querySelectorAll('.detail-row.open').forEach(x => x.classList.remove('open'));
+  document.querySelectorAll('tr.expanded').forEach(x => x.classList.remove('expanded'));
+  if (!was) { dr.classList.add('open'); tr.classList.add('expanded'); }
+}
+
+function updateCounts() {
+  const rows = document.querySelectorAll('tr.data-row:not(.hidden)');
+  let total=0, crit=0, high=0, med=0, nw=0;
+  rows.forEach(r => {
+    total++;
+    const s = r.dataset.sev;
+    if (s==='critical') crit++;
+    else if (s==='high') high++;
+    else if (s==='medium') med++;
+    else nw++;
+  });
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-crit').textContent  = crit;
+  document.getElementById('s-high').textContent  = high;
+  document.getElementById('s-med').textContent   = med;
+  document.getElementById('s-new').textContent   = nw;
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.detail-row.open').forEach(x => x.classList.remove('open'));
+    document.querySelectorAll('tr.expanded').forEach(x => x.classList.remove('expanded'));
+    const f = btn.dataset.filter;
+    document.querySelectorAll('tr.data-row').forEach(tr => {
+      const fw = tr.dataset.fw;
+      const sev = tr.dataset.sev;
+      let show = f === 'all'
+        || (f === 'critical' && (sev === 'critical' || sev === 'new'))
+        || (fw && fw.includes(f));
+      tr.classList.toggle('hidden', !show);
+      const dr = document.querySelector(`tr[data-detail-for="${tr.dataset.id}"]`);
+      if (dr) dr.classList.toggle('hidden', !show);
+    });
+    // hide empty sections
+    document.querySelectorAll('tr.section-row').forEach(sr => {
+      const sec = sr.dataset.section;
+      let next = sr.nextElementSibling;
+      let hasVisible = false;
+      while (next && !next.classList.contains('section-row')) {
+        if (next.classList.contains('data-row') && !next.classList.contains('hidden')) hasVisible = true;
+        next = next.nextElementSibling;
+      }
+      sr.classList.toggle('hidden', !hasVisible);
+    });
+    updateCounts();
+  });
+});
+
+// ── Column resize ────────────────────────────────────────────
+(function() {
+  const table = document.getElementById('matrix');
+  const cols  = table.querySelectorAll('colgroup col');
+  let dragging = null, startX = 0, startW = 0;
+
+  document.querySelectorAll('.resize-handle').forEach(handle => {
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const idx = +handle.dataset.col;
+      dragging = { idx, col: cols[idx] };
+      startX = e.clientX;
+      startW = cols[idx].offsetWidth || parseInt(cols[idx].style.width) || 180;
+      handle.classList.add('dragging');
+    });
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const diff = e.clientX - startX;
+    const newW = Math.max(80, startW + diff);
+    dragging.col.style.width = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    document.querySelectorAll('.resize-handle').forEach(h => h.classList.remove('dragging'));
+    dragging = null;
+  });
+})();
+
+build();
+</script>
+</body>
+</html>
